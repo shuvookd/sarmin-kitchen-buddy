@@ -5,7 +5,9 @@ import { FoodCard } from "@/components/food/FoodCard";
 import { ChatAssistant } from "@/components/chat/ChatAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Search } from "lucide-react";
 
 interface FoodItem {
   id: string;
@@ -30,6 +32,7 @@ export default function CustomerPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [sessionId] = useState(() => {
     let id = localStorage.getItem("guest_session_id");
     if (!id) {
@@ -129,7 +132,9 @@ export default function CustomerPage() {
       const matchesType = item.food_type === foodType;
       const matchesCategory =
         selectedCategory === "all" || item.category_id === selectedCategory;
-      return matchesType && matchesCategory;
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesType && matchesCategory && matchesSearch;
     });
   };
 
@@ -150,17 +155,27 @@ export default function CustomerPage() {
       <Header cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)} />
 
       <main className="container mx-auto px-4 py-8">
-          <div className="mb-8">
+          <div className="mb-8 animate-fade-in">
             <h1 className="text-4xl font-bold text-foreground mb-2">
               Welcome to Sarmin's Cloud Kitchen
             </h1>
-            <p className="text-muted-foreground">Fresh, delicious meals delivered to you</p>
+            <p className="text-muted-foreground text-lg">Fresh, delicious meals delivered to you</p>
           </div>
 
-          <div className="mb-6 flex flex-wrap gap-2">
+          <div className="mb-6 relative animate-slide-in">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+            <Input
+              placeholder="Search for food items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-12 text-base"
+            />
+          </div>
+
+          <div className="mb-6 flex flex-wrap gap-2 animate-slide-in">
             <Badge
               variant={selectedCategory === "all" ? "default" : "outline"}
-              className="cursor-pointer"
+              className="cursor-pointer hover:scale-105 transition-transform px-4 py-2"
               onClick={() => setSelectedCategory("all")}
             >
               All Categories
@@ -169,7 +184,7 @@ export default function CustomerPage() {
               <Badge
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
-                className="cursor-pointer"
+                className="cursor-pointer hover:scale-105 transition-transform px-4 py-2"
                 onClick={() => setSelectedCategory(category.id)}
               >
                 {category.name}
@@ -178,9 +193,9 @@ export default function CustomerPage() {
           </div>
 
           <Tabs defaultValue="cooked" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="cooked">Cooked Food</TabsTrigger>
-              <TabsTrigger value="ready_to_cook">Ready To Cook</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-8 h-12">
+              <TabsTrigger value="cooked" className="text-base">Cooked Food</TabsTrigger>
+              <TabsTrigger value="ready_to_cook" className="text-base">Ready To Cook</TabsTrigger>
             </TabsList>
 
             <TabsContent value="cooked">

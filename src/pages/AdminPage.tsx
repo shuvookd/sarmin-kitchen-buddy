@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { CategoryManagement } from "@/components/admin/CategoryManagement";
+import { OrdersManagement } from "@/components/admin/OrdersManagement";
+import { InvoiceUpload } from "@/components/admin/InvoiceUpload";
 
 interface FoodItem {
   id: string;
@@ -132,8 +135,19 @@ export default function AdminPage() {
         <Header isAdmin />
 
         <main className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+
+          <Tabs defaultValue="inventory" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsTrigger value="inventory">Inventory</TabsTrigger>
+              <TabsTrigger value="categories">Categories</TabsTrigger>
+              <TabsTrigger value="orders">Orders</TabsTrigger>
+              <TabsTrigger value="invoice">Invoice Upload</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="inventory">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Inventory Management</h2>
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
               setIsAddDialogOpen(open);
               if (!open) resetForm();
@@ -244,122 +258,136 @@ export default function AdminPage() {
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
-
-          <Tabs defaultValue="cooked" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="cooked">Cooked Food</TabsTrigger>
-              <TabsTrigger value="ready_to_cook">Ready to Cook</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="cooked" className="mt-6">
-              <div className="grid gap-4">
-                {foodItems
-                  .filter((item) => item.food_type === "cooked")
-                  .map((item) => (
-                    <Card key={item.id}>
-                      <CardContent className="flex items-center gap-4 p-6">
-                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          {item.image_url ? (
-                            <img
-                              src={item.image_url}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                              No image
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-1">
-                              {item.description}
-                            </p>
-                          )}
-                          <p className="text-sm font-bold text-primary mt-1">
-                            ৳{Number(item.price).toFixed(2)}
-                          </p>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => handleEdit(item)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
               </div>
+
+              <Tabs defaultValue="cooked" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="cooked">Cooked Food</TabsTrigger>
+                  <TabsTrigger value="ready_to_cook">Ready to Cook</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="cooked" className="mt-6">
+                  <div className="grid gap-4">
+                    {foodItems
+                      .filter((item) => item.food_type === "cooked")
+                      .map((item) => (
+                        <Card key={item.id}>
+                          <CardContent className="flex items-center gap-4 p-6">
+                            <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                              {item.image_url ? (
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                                  No image
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{item.name}</h3>
+                              {item.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                  {item.description}
+                                </p>
+                              )}
+                              <p className="text-sm font-bold text-primary mt-1">
+                                ৳{Number(item.price).toFixed(2)}
+                              </p>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => handleEdit(item)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="ready_to_cook" className="mt-6">
+                  <div className="grid gap-4">
+                    {foodItems
+                      .filter((item) => item.food_type === "ready_to_cook")
+                      .map((item) => (
+                        <Card key={item.id}>
+                          <CardContent className="flex items-center gap-4 p-6">
+                            <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                              {item.image_url ? (
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                                  No image
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{item.name}</h3>
+                              {item.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                  {item.description}
+                                </p>
+                              )}
+                              <p className="text-sm font-bold text-primary mt-1">
+                                ৳{Number(item.price).toFixed(2)}
+                              </p>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => handleEdit(item)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
-            <TabsContent value="ready_to_cook" className="mt-6">
-              <div className="grid gap-4">
-                {foodItems
-                  .filter((item) => item.food_type === "ready_to_cook")
-                  .map((item) => (
-                    <Card key={item.id}>
-                      <CardContent className="flex items-center gap-4 p-6">
-                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          {item.image_url ? (
-                            <img
-                              src={item.image_url}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                              No image
-                            </div>
-                          )}
-                        </div>
+            <TabsContent value="categories">
+              <CategoryManagement />
+            </TabsContent>
 
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-1">
-                              {item.description}
-                            </p>
-                          )}
-                          <p className="text-sm font-bold text-primary mt-1">
-                            ৳{Number(item.price).toFixed(2)}
-                          </p>
-                        </div>
+            <TabsContent value="orders">
+              <OrdersManagement />
+            </TabsContent>
 
-                        <div className="flex gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => handleEdit(item)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
+            <TabsContent value="invoice">
+              <InvoiceUpload />
             </TabsContent>
           </Tabs>
         </main>
