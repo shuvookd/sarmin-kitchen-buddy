@@ -20,21 +20,24 @@ export type Database = {
           food_item_id: string
           id: string
           quantity: number
-          user_id: string
+          session_id: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
           food_item_id: string
           id?: string
           quantity?: number
-          user_id: string
+          session_id?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
           food_item_id?: string
           id?: string
           quantity?: number
-          user_id?: string
+          session_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -227,7 +230,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      promote_to_admin: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
