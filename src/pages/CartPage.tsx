@@ -9,7 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { AuthGuard } from "@/components/auth/AuthGuard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CartItem {
   id: string;
@@ -30,11 +39,23 @@ export default function CartPage() {
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    loadCart();
-    loadProfile();
+    checkAuthAndLoadCart();
   }, []);
+
+  const checkAuthAndLoadCart = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setIsLoggedIn(!!user);
+    
+    if (user) {
+      loadProfile();
+    }
+    
+    loadCart();
+  };
 
   const loadProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -54,20 +75,50 @@ export default function CartPage() {
 
   const loadCart = async () => {
     try {
-      const { data } = await supabase
-        .from("cart_items")
-        .select(`
-          id,
-          quantity,
-          food_items (
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Load from database for logged-in users
+        const { data } = await supabase
+          .from("cart_items")
+          .select(`
             id,
-            name,
-            price,
-            image_url
-          )
-        `);
+            quantity,
+            food_items (
+              id,
+              name,
+              price,
+              image_url
+            )
+          `)
+          .eq("user_id", user.id);
 
-      setCartItems(data || []);
+        setCartItems(data || []);
+      } else {
+        // Load from localStorage for guests
+        const guestCart = localStorage.getItem("guest_cart");
+        if (guestCart) {
+          const guestCartData = JSON.parse(guestCart);
+          
+          // Get food item details for guest cart
+          const foodItemIds = guestCartData.map((item: any) => item.food_item_id);
+          const { data: foodItems } = await supabase
+            .from("food_items")
+            .select("id, name, price, image_url")
+            .in("id", foodItemIds);
+
+          const cartWithDetails = guestCartData.map((cartItem: any) => {
+            const foodItem = foodItems?.find((fi) => fi.id === cartItem.food_item_id);
+            return {
+              id: cartItem.food_item_id,
+              quantity: cartItem.quantity,
+              food_items: foodItem || { id: "", name: "", price: 0, image_url: null },
+            };
+          });
+
+          setCartItems(cartWithDetails);
+        }
+      }
     } catch (error) {
       console.error("Error loading cart:", error);
       toast.error("Failed to load cart");
@@ -88,10 +139,23 @@ export default function CartPage() {
     }
 
     try {
-      await supabase
-        .from("cart_items")
-        .update({ quantity: newQuantity })
-        .eq("id", itemId);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        await supabase
+          .from("cart_items")
+          .update({ quantity: newQuantity })
+          .eq("id", itemId)
+          .eq("user_id", user.id);
+      } else {
+        // Update localStorage for guest
+        const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+        const itemIndex = guestCart.findIndex((ci: any) => ci.food_item_id === itemId);
+        if (itemIndex !== -1) {
+          guestCart[itemIndex].quantity = newQuantity;
+          localStorage.setItem("guest_cart", JSON.stringify(guestCart));
+        }
+      }
 
       loadCart();
     } catch (error) {
@@ -102,7 +166,17 @@ export default function CartPage() {
 
   const removeItem = async (itemId: string) => {
     try {
-      await supabase.from("cart_items").delete().eq("id", itemId);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        await supabase.from("cart_items").delete().eq("id", itemId).eq("user_id", user.id);
+      } else {
+        // Remove from localStorage for guest
+        const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+        const updatedCart = guestCart.filter((ci: any) => ci.food_item_id !== itemId);
+        localStorage.setItem("guest_cart", JSON.stringify(updatedCart));
+      }
+      
       toast.success("Item removed from cart");
       loadCart();
     } catch (error) {
@@ -119,6 +193,14 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
+    // Check if user is logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setShowLoginDialog(true);
+      return;
+    }
+
     if (!deliveryAddress || !phone) {
       toast.error("Please provide delivery address and phone number");
       return;
@@ -132,8 +214,6 @@ export default function CartPage() {
     setSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
 
       const totalAmount = calculateTotal();
 
@@ -186,9 +266,25 @@ export default function CartPage() {
   }
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <Header cartItemCount={cartItems.length} />
+    <div className="min-h-screen bg-background">
+      <Header cartItemCount={cartItems.length} />
+      
+      <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              You need to be logged in to place an order. Please sign up or log in to continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => navigate("/auth")}>
+              Go to Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
         <main className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
@@ -333,7 +429,6 @@ export default function CartPage() {
             </div>
           )}
         </main>
-      </div>
-    </AuthGuard>
+    </div>
   );
 }

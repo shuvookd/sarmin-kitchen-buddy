@@ -6,7 +6,6 @@ import { ChatAssistant } from "@/components/chat/ChatAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { AuthGuard } from "@/components/auth/AuthGuard";
 
 interface FoodItem {
   id: string;
@@ -31,6 +30,14 @@ export default function CustomerPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [sessionId] = useState(() => {
+    let id = localStorage.getItem("guest_session_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("guest_session_id", id);
+    }
+    return id;
+  });
 
   useEffect(() => {
     loadData();
@@ -38,17 +45,34 @@ export default function CustomerPage() {
 
   const loadData = async () => {
     try {
-      const [foodResponse, cartResponse, categoriesResponse] = await Promise.all([
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const [foodResponse, categoriesResponse] = await Promise.all([
         supabase
           .from("food_items")
           .select("*, categories(name)")
           .order("name"),
-        supabase.from("cart_items").select("food_item_id, quantity"),
         supabase.from("categories").select("id, name").order("display_order"),
       ]);
 
+      // Load cart - either from database (if logged in) or localStorage (if guest)
+      let cartData: CartItem[] = [];
+      if (user) {
+        const { data } = await supabase
+          .from("cart_items")
+          .select("food_item_id, quantity")
+          .eq("user_id", user.id);
+        cartData = data || [];
+      } else {
+        // Guest cart from localStorage
+        const guestCart = localStorage.getItem("guest_cart");
+        if (guestCart) {
+          cartData = JSON.parse(guestCart);
+        }
+      }
+
       if (foodResponse.data) setFoodItems(foodResponse.data);
-      if (cartResponse.data) setCartItems(cartResponse.data);
+      setCartItems(cartData);
       if (categoriesResponse.data) setCategories(categoriesResponse.data);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -61,20 +85,35 @@ export default function CustomerPage() {
   const handleAddToCart = async (foodItemId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
 
-      const existingItem = cartItems.find((item) => item.food_item_id === foodItemId);
+      if (user) {
+        // Logged in user - save to database
+        const existingItem = cartItems.find((item) => item.food_item_id === foodItemId);
 
-      if (existingItem) {
-        await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq("user_id", user.id)
-          .eq("food_item_id", foodItemId);
+        if (existingItem) {
+          await supabase
+            .from("cart_items")
+            .update({ quantity: existingItem.quantity + 1 })
+            .eq("user_id", user.id)
+            .eq("food_item_id", foodItemId);
+        } else {
+          await supabase
+            .from("cart_items")
+            .insert({ user_id: user.id, food_item_id: foodItemId, quantity: 1 });
+        }
       } else {
-        await supabase
-          .from("cart_items")
-          .insert({ user_id: user.id, food_item_id: foodItemId, quantity: 1 });
+        // Guest user - save to localStorage
+        const guestCart = [...cartItems];
+        const existingItem = guestCart.find((item) => item.food_item_id === foodItemId);
+        
+        if (existingItem) {
+          existingItem.quantity += 1;
+        } else {
+          guestCart.push({ food_item_id: foodItemId, quantity: 1 });
+        }
+        
+        setCartItems(guestCart);
+        localStorage.setItem("guest_cart", JSON.stringify(guestCart));
       }
 
       toast.success("Added to cart");
@@ -107,11 +146,10 @@ export default function CustomerPage() {
   }
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <Header cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)} />
+    <div className="min-h-screen bg-background">
+      <Header cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)} />
 
-        <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-foreground mb-2">
               Welcome to Sarmin's Cloud Kitchen
@@ -183,10 +221,9 @@ export default function CustomerPage() {
               </div>
             </TabsContent>
           </Tabs>
-        </main>
+      </main>
 
-        <ChatAssistant />
-      </div>
-    </AuthGuard>
+      <ChatAssistant />
+    </div>
   );
 }

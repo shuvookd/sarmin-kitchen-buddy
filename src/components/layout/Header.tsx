@@ -14,6 +14,7 @@ interface HeaderProps {
 export const Header = ({ cartItemCount = 0, isAdmin = false }: HeaderProps) => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     loadUserName();
@@ -21,6 +22,8 @@ export const Header = ({ cartItemCount = 0, isAdmin = false }: HeaderProps) => {
 
   const loadUserName = async () => {
     const { data: { user } } = await supabase.auth.getUser();
+    setIsLoggedIn(!!user);
+    
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -75,19 +78,30 @@ export const Header = ({ cartItemCount = 0, isAdmin = false }: HeaderProps) => {
             </Button>
           )}
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            {userName}
-          </div>
+          {isLoggedIn ? (
+            <>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                {userName}
+              </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            title="Sign Out"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                title="Sign Out"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="default"
+              onClick={() => navigate("/auth")}
+            >
+              Admin Login
+            </Button>
+          )}
         </nav>
       </div>
     </header>
