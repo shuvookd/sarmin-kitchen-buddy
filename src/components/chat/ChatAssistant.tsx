@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -21,6 +21,17 @@ export const ChatAssistant = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string>("");
+
+  // Generate or retrieve session ID on mount
+  useEffect(() => {
+    let id = localStorage.getItem("chat_session_id");
+    if (!id) {
+      id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem("chat_session_id", id);
+    }
+    setSessionId(id);
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -37,6 +48,7 @@ export const ChatAssistant = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          sessionId: sessionId,
           message: userMessage,
           timestamp: new Date().toISOString(),
         }),
