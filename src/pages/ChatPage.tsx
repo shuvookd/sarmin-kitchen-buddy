@@ -14,7 +14,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! Welcome to Sarmin's Cloud Kitchen 🍳 How can I help you today? You can ask about our menu, prices, or place an order!",
+      content:
+        "Hello! Welcome to Sarmin's Cloud Kitchen 🍳 How can I help you today? You can ask about our menu, prices, or place an order!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -52,12 +53,9 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
-      const assistantMessage = data.response || data.message || "I received your message!";
+      const assistantMessage = data.data || data.message || "I received your message!";
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: assistantMessage },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: assistantMessage }]);
     } catch (error) {
       console.error("Chat error:", error);
       toast.error("Failed to send message. Please try again.");
@@ -85,9 +83,7 @@ export default function ChatPage() {
       {/* Header */}
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-center">
-            Sarmin's Kitchen Assistant 🍳
-          </h1>
+          <h1 className="text-2xl font-bold text-center">Sarmin's Kitchen Assistant 🍳</h1>
         </div>
       </header>
 
@@ -100,20 +96,14 @@ export default function ChatPage() {
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  } animate-fade-in`}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
                 >
                   <div
                     className={`max-w-[80%] rounded-3xl px-6 py-4 shadow-lg ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground ml-auto"
-                        : "bg-muted"
+                      message.role === "user" ? "bg-primary text-primary-foreground ml-auto" : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               ))}
@@ -122,9 +112,7 @@ export default function ChatPage() {
                   <div className="bg-muted rounded-3xl px-6 py-4 shadow-lg">
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">
-                        Thinking...
-                      </span>
+                      <span className="text-sm text-muted-foreground">Thinking...</span>
                     </div>
                   </div>
                 </div>
