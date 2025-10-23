@@ -43,7 +43,7 @@ export const ChatAssistant = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://5678:5678/webhook/Assistant", {
+      const response = await fetch("http://localhost:5678/webhook/Assistant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
