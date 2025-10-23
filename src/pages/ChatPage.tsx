@@ -53,8 +53,8 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
-      const assistantMessage = data.response || data.message || "I received your message!";
-      
+      const assistantMessage = data.data || data.message || "I received your message!";
+
       setMessages((prev) => [...prev, { role: "assistant", content: assistantMessage }]);
     } catch (error) {
       console.error("Chat error:", error);
