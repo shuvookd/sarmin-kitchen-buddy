@@ -16,7 +16,8 @@ export const ChatAssistant = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your Sarmin's Cloud Kitchen assistant. How can I help you today? You can ask about our menu, place orders, or get information about our food items.",
+      content:
+        "Hello! I'm your Sarmin's Cloud Kitchen assistant. How can I help you today? You can ask about our menu, place orders, or get information about our food items.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -59,12 +60,10 @@ export const ChatAssistant = () => {
       }
 
       const data = await response.json();
-      const assistantMessage = data.response || data.message || "I received your message!";
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: assistantMessage },
-      ]);
+      const assistantMessage = data.data || data.message || "I received your message!";
+
+      setMessages((prev) => [...prev, { role: "assistant", content: assistantMessage }]);
     } catch (error) {
       console.error("Chat error:", error);
       toast.error("Failed to send message. Please try again.");
@@ -96,12 +95,7 @@ export const ChatAssistant = () => {
     <Card className="fixed bottom-6 right-6 w-96 h-[500px] flex flex-col shadow-2xl">
       <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
         <h3 className="font-semibold">Chat Assistant</h3>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsOpen(false)}
-          className="hover:bg-primary-foreground/20"
-        >
+        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="hover:bg-primary-foreground/20">
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -109,17 +103,10 @@ export const ChatAssistant = () => {
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+            <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                  message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                 }`}
               >
                 <p className="text-sm">{message.content}</p>
