@@ -43,7 +43,7 @@ export const ChatAssistant = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://sarmin00.app.n8n.cloud/webhook-test/Assistant", {
+      const response = await fetch("http://localhost:5678/webhook-test/Assistant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
