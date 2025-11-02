@@ -43,20 +43,17 @@ export const ChatAssistant = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        "https://n8nlearn-axa7dtdsggd5d3fu.southeastasia-01.azurewebsites.net/webhook/d61a3031-8beb-4d96-81dc-9dfe993a999d/chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            sessionId: sessionId,
-            message: userMessage,
-            timestamp: new Date().toISOString(),
-          }),
+      const response = await fetch("https://appt00.app.n8n.cloud/webhook/Chatbot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          sessionId: sessionId,
+          message: userMessage,
+          timestamp: new Date().toISOString(),
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to get response");
